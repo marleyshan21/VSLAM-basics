@@ -97,6 +97,37 @@ void pose_estimation_2d2d(std::vector<cv::KeyPoint> keypoints1, std::vector<cv::
 
 }
 
+cv::Point2f pixel2cam(const cv::Point2d &p, const cv::Mat &K){
+    return cv::Point2f(
+            (p.x - K.at<double>(0,2)) / K.at<double>(0,0),
+            (p.y - K.at<double>(1,2)) / K.at<double>(1,1)
+            );
+}
+
+void check_epipolar_constraint(cv::Mat t, cv::Mat R, std::vector<cv::DMatch> matches, std::vector<cv::KeyPoint> keypoints1, std::vector<cv::KeyPoint> keypoints2){
+
+    cv::Mat t_x = (cv::Mat_<double>(3,3) << 0, -t.at<double>(2,0), t.at<double>(1,0),
+                                            t.at<double>(2,0), 0, -t.at<double>(0,0),
+                                            -t.at<double>(1,0), t.at<double>(0,0), 0);
+
+
+    cv::Mat K = (cv::Mat_<double>(3,3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
+
+    for(auto m: matches){
+
+        cv::Point2f pt1 = pixel2cam(keypoints1[m.queryIdx].pt, K);
+        cv::Point2f pt2 = pixel2cam(keypoints2[m.trainIdx].pt, K);
+
+        cv::Mat y1 = (cv::Mat_<double>(3,1) << pt1.x, pt1.y, 1);
+        cv::Mat y2 = (cv::Mat_<double>(3,1) << pt2.x, pt2.y, 1);
+
+        cv::Mat d = y2.t() * t_x * R * y1;
+
+        // should be close to zero
+        std::cout << "epipolar constraint = " << d << std::endl;
+    }
+}
+
 
 int main(int argc, char **argv){
 
@@ -120,6 +151,9 @@ int main(int argc, char **argv){
     // estimate R, t using the matches
     cv::Mat R, t;
     pose_estimation_2d2d(keypoints1, keypoints2, matches, R, t);
+
+    // check the epipolar constraints
+    check_epipolar_constraint(t, R, matches, keypoints1, keypoints2);
 
     return 0;
 
