@@ -11,6 +11,29 @@
 #include <chrono>
 
 
+std::vector<cv::DMatch> remove_outliers(std::vector<cv::DMatch> matches){
+
+    auto min_max = std::minmax_element(matches.begin(), matches.end(),
+        [](const cv::DMatch &m1, const cv::DMatch &m2){
+            return m1.distance < m2.distance;
+        });
+
+    double min_dist = min_max.first->distance;
+    double max_dist = min_max.second->distance;
+
+    std::vector<cv::DMatch> good_matches;
+
+    for(int i = 0; i < matches.size(); i++){
+        if(matches[i].distance <= std::max(2*min_dist, 30.0)){
+            good_matches.push_back(matches[i]);
+        }
+    }
+
+    return good_matches;
+}
+
+
+
 int main(int argc, char **argv){
 
     // check if the input is correct
@@ -55,9 +78,12 @@ int main(int argc, char **argv){
     time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
     std::cout << "match orb features cost time: " << time_used.count() << " seconds." << std::endl;
 
+    // remove the outliers
+    std::vector<cv::DMatch> good_matches = remove_outliers(matches);
+
     // draw the matches
     cv::Mat img_matches;
-    cv::drawMatches(img1, keypoints1, img2, keypoints2, matches, img_matches);
+    cv::drawMatches(img1, keypoints1, img2, keypoints2, good_matches, img_matches);
 
     cv::imshow("matches", img_matches);
     cv::waitKey(0);
