@@ -19,13 +19,13 @@ std::vector<cv::DMatch> remove_outliers(std::vector<cv::DMatch> matches){
         });
 
     double min_dist = min_max.first->distance;
-    double max_dist = min_max.second->distance;
+//    double max_dist = min_max.second->distance;
 
     std::vector<cv::DMatch> good_matches;
 
-    for(int i = 0; i < matches.size(); i++){
-        if(matches[i].distance <= std::max(2*min_dist, 30.0)){
-            good_matches.push_back(matches[i]);
+    for(auto & match : matches){
+        if(match.distance <= std::max(3*min_dist, 50.0)){
+            good_matches.push_back(match);
         }
     }
 
@@ -38,7 +38,7 @@ int main(int argc, char **argv){
 
     // check if the input is correct
     if(argc != 3){
-        std::cout << "usage: feature_extraction img1 img2" << std::endl;
+        std::cout << "usage: 2d_2d img1 img2" << std::endl;
         return 1;
     }
 
